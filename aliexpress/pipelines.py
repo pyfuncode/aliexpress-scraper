@@ -8,39 +8,42 @@
 from __future__ import print_function
 
 import os.path
-from scrapy.exceptions import DropItem
-from shutil import which
+
 import gspread
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from itemadapter import ItemAdapter
+from scrapy.exceptions import DropItem
 
 
-class AmazonPipeline(object):
+class AliexpressPipeline(object):
     SCOPE = ['https://www.googleapis.com/auth/spreadsheets',
              'https://www.googleapis.com/auth/drive']
 
-    def __init__(self, sheet_id, header, spread_sheet):
-        self.sheet_id = sheet_id
-        self.spread_sheet = spread_sheet
+    def __init__(self, sheet_index, header, spread_sheet_url):
+        self.sheet_index = sheet_index
+        self.spread_sheet_url = spread_sheet_url
         self.header = header
         self.worksheet = None
-        self.token_path = './token.json'
-        self.cred_path = './creds.json'
+        ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+        self.cred_path = os.path.join(ROOT_DIR, 'creds.json')
+        self.token = os.path.join(ROOT_DIR, 'token.json')
+
     @classmethod
     def from_crawler(cls, crawler):
+        settings = crawler.settings
         return cls(
-            sheet_id=crawler.settings.get('GOOGLE_SHEET_ID'),
-            spread_sheet=crawler.settings.get('SPREAD_SHEET_NAME'),
-            header=crawler.settings.get('FEED_EXPORT_FIELDS')
+            sheet_index=settings.get('GOOGLE_SHEET_INDEX'),
+            spread_sheet_url=settings.get('SPREAD_SHEET_URL'),
+            header=settings.get('FEED_EXPORT_FIELDS')
         )
 
     def open_spider(self, spider):
         creds = None
-        print(self.token_path)
-        if os.path.exists(self.token_path):
-            creds = Credentials.from_authorized_user_file(self.token_path, self.SCOPE)
+        if os.path.exists(self.token):
+            creds = Credentials.from_authorized_user_file(self.token, self.SCOPE)
+
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
@@ -48,16 +51,15 @@ class AmazonPipeline(object):
                 flow = InstalledAppFlow.from_client_secrets_file(
                     self.cred_path, scopes=self.SCOPE)
                 creds = flow.run_local_server(port=0)
-            with open(self.token_path, 'w') as token:
+            with open(self.token, 'w') as token:
                 token.write(creds.to_json())
         client = gspread.authorize(credentials=creds)
-        sheet = client.open(self.spread_sheet)
-        self.worksheet = sheet.get_worksheet_by_id(self.sheet_id)
-        is_header =self.worksheet.get('A1')
+
+        sheet = client.open_by_url(self.spread_sheet_url)
+        self.worksheet = sheet.get_worksheet(self.sheet_index)
+        is_header = self.worksheet.get('A1')
         if not is_header:
             self.worksheet.insert_row(self.header, index=1)
-    def close_spider(self, spider):
-        pass
 
     def process_item(self, item, spider):
         self.worksheet.append_row(
@@ -78,6 +80,9 @@ class AmazonPipeline(object):
             ]
         )
         return item
+
+    def close_spider(self, spider):
+        pass
 
 
 class DuplicatesPipeline:

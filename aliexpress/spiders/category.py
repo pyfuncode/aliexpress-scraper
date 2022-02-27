@@ -1,17 +1,17 @@
 import json
-from os import name
 import re
 import time
 
 import requests
 import scrapy
 from scrapy.selector import Selector
-from scrapyselenium import SeleniumRequest
+from scrapy_selenium import SeleniumRequest
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
 from ..utils import (get_random_agent,
-                     find_categories, image_html,  restore_cookies,
+                     find_categories, image_html, restore_cookies,
                      spect_table,
                      sku_color_size_list,
                      key_exists,
@@ -19,7 +19,6 @@ from ..utils import (get_random_agent,
                      remove_tag,
                      check_model,
                      find_package_detail,
-                     cleaned_image_description,
                      )
 
 
@@ -64,7 +63,7 @@ class AmazonSearchSpider(scrapy.Spider):
 
             )
 
-    def parse(self, response):
+    def parse(self, response, **kwargs):
         driver = response.meta['driver']
         try:
             WebDriverWait(driver, 120).until(
@@ -140,7 +139,7 @@ class AmazonSearchSpider(scrapy.Spider):
             )
 
     def parse_product(self, response):
-        matches = ["pcs", "1/2 pcs", "2 pcs"]
+        matches = ["pcs", "1/2 pcs", "2 pcs"]  #
         pattren = re.compile(
             r'\bdata\s*:\s*(\{.*?\})\s*;\s*', re.MULTILINE | re.DOTALL)
         json_data = response.css('script::text').re_first(pattren)
@@ -222,12 +221,12 @@ class AmazonSearchSpider(scrapy.Spider):
         description_list = des_selector.xpath(
             '//p/text() | //div/descendant::*/text() | //span/descendant::*/text() |//li/descendant::*/text()').getall()
 
-        text_descrtipion = '\n'.join(list(map(remove_tag, description_list)))
+        text_descrtipion = ' '.join(list(map(remove_tag, description_list)))
         description_img = des_selector.xpath('//img/@src').getall()
 
         img_list = '\n'.join(image_html(
             map(remove_tag, description_img), title))
-        descrip = text_descrtipion.rstrip()+img_list.replace("\"\"", "\"")
+        desc = text_descrtipion.rstrip() + img_list.replace("\"\"", "\"")
         packge_d = find_package_detail(description_list)
         if packge_d:
             packge_include = '<b>{}</b>\n{}'.format(title, packge_d)
@@ -237,16 +236,16 @@ class AmazonSearchSpider(scrapy.Spider):
         stock = 'In Stock' if quantity > 0 else 'Sold out'
         yield {
 
-            'Category': category,
-            'Sub Category': subcategory,
-            '3rd Category': supercategory,
-            'Product Model': product_mode,
-            'Product Name': title,
+            'Category': remove_tag(category),
+            'Sub Category': remove_tag(subcategory),
+            '3rd Category': remove_tag(supercategory),
+            'Product Model': remove_tag(product_mode),
+            'Product Name': remove_tag(title),
             'hk_intl_price': price,
             'hk_intl stock status': stock,
             'Products Shipping Weight(g)': product_weight,
             'Quantity': quantity,
-            'Description': descrip,
+            'Description': '',
             'Products Specifications': specification,
             'Products Package Includes': packge_include,
             'Images Url': '\n'.join(image), }

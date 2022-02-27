@@ -5,25 +5,24 @@ import time
 import requests
 import scrapy
 from scrapy.selector import Selector
-from scrapyselenium import SeleniumRequest
+from scrapy_selenium import SeleniumRequest
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
 from ..utils import (get_random_agent,
-                     find_categories, image_html, json_output,
-                     spect_table,
+                     find_categories, image_html, spect_table,
                      sku_color_size_list,
                      key_exists,
                      restore_cookies,
                      remove_tag,
                      check_model,
-                     find_package_detail, cleaned_image_description)
+                     find_package_detail)
 
 
 class StoreSpider(scrapy.Spider):
     name = 'store'
     allowed_domains = ['www.aliexpress.com']
+
     # keyword = 'https://www.aliexpress.com/store/4493070?spm=a2g0o.productlist.0.0.18fb4f9bkQ66Cn'
     # keyword = 'https://www.aliexpress.com/store/top-rated-products/3874104.html?spm=a2g0o.detail.1000061.4.7b5a11927qzNTN'
 
@@ -43,7 +42,7 @@ class StoreSpider(scrapy.Spider):
 
         )
 
-    def parse(self, response):
+    def parse(self, response, **kwargs):
         driver = response.meta['driver']
         try:
             WebDriverWait(driver, 10).until(
@@ -187,7 +186,7 @@ class StoreSpider(scrapy.Spider):
 
         img_list = '\n'.join(image_html(
             map(remove_tag, description_img), title))
-        descrip = text_descrtipion.rstrip()+img_list.replace("\"\"", "\"")
+        descrip = text_descrtipion.rstrip() + img_list.replace("\"\"", "\"")
         packge_d = find_package_detail(description_list)
         if packge_d:
             packge_include = '<b>{}</b>\n{}'.format(title, packge_d)

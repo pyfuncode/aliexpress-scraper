@@ -13,16 +13,6 @@ from scrapy.utils import project
 from scrapy.utils.log import configure_logging
 from twisted.internet import reactor
 
-class PrintLogger(object):  # create file like object
-    def __init__(self, textbox):  # pass reference to text widget
-        self.textbox = textbox  # keep ref
-
-    def write(self, text):  # make field editable
-        self.textbox.insert(tk.END, text)  # write text to textbox
-
-    def flush(self):  # needed for file like object
-        pass
-
 
 class App(tk.Tk):
     def __init__(self):
@@ -30,14 +20,14 @@ class App(tk.Tk):
         self.title('Ali Express Product Scraper')
         self.geometry('400x200')
         self.resizable(0, 0)
-        self.attributes('-toolwindow', True)
         self.use_proxy = tk.StringVar(self)
         self.proxy_path = tk.StringVar(self, value='Proxy file(txt)')
         self.proxy_path_abs = None
-        self.keyword_text = tk.StringVar(self)
+        self.keyword_text = tk.StringVar(self,
+                                         value='https://www.aliexpress.com/premium/category/200118008.html?CatId=200118008&spm=a2g0o.productlist.0.0.466f7183npYtzL')
         self.ouput = tk.StringVar(self)
         self.folder_path_text = tk.StringVar(
-            self, value=os.path.join(os.path.join(os.environ['USERPROFILE']), 'Desktop'))
+            self, value=os.path.join(os.path.join(os.path.expanduser('~')), 'Desktop'))
 
         self.execute_thread = None
         self.feed_options = ['json', 'csv']
@@ -61,7 +51,7 @@ class App(tk.Tk):
         keyword = ttk.Entry(input_frame, width=30, textvariable=self.keyword_text)
         keyword.focus()
         keyword.grid(column=1, row=0, sticky=tk.W)
-        
+
         lbl_frame = ttk.LabelFrame(input_frame, text='Feed Type:')
         lbl_frame.grid(column=0, row=2, sticky='W')
         ttk.Combobox(lbl_frame, textvariable=self.feed_text, values=self.feed_options, width=10).grid(column=0, row=0,

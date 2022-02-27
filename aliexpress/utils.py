@@ -1,9 +1,9 @@
 import json
-import re
-from random import choice
 import pickle
+import re
 from http.cookies import SimpleCookie
 from pathlib import Path
+from random import choice
 
 pack_pattern = pk_inc_pattern = re.compile(
     r'^\n?[1-9]\s*?[×x*]\s*?.*?$', re.MULTILINE | re.DOTALL | re.IGNORECASE)
@@ -97,7 +97,6 @@ user_agent_list = [
 
 
 def image_html(image_list, title):
-
     img_template = """<div class=self-adaption style='margin-bottom:10px;'>
     <img style='max-width: 1000px;' title='{}' src='{}' />
     </div>"""
@@ -122,7 +121,6 @@ def spect_table(specs_dic):
 
 
 def RemoveBannedWords(word):
-
     pattern = re.compile(r"\d+\s*?[x*]\s+?", re.I)
     return pattern.sub("", word)
 
